@@ -1,0 +1,267 @@
+﻿<div class="mbg-memory-game" data-memory-game>
+    <style>
+        .mbg-memory-game { --card-bg: #155e75; --game-bg: #eef6f8; --ink: #172033; --muted: #667085; width: 100%; min-height: 520px; padding: clamp(14px, 3vw, 28px); border-radius: 18px; color: var(--ink); background: var(--game-bg); font-family: "Segoe UI", Roboto, Arial, sans-serif; font-size: 16px; line-height: 1.5; text-align: left; box-sizing: border-box; isolation: isolate; overflow: hidden; }
+        .mbg-memory-game *, .mbg-memory-game *::before, .mbg-memory-game *::after { box-sizing: border-box; }
+        .mbg-memory-game .mbg-game { width: min(100%, 980px); margin: 0 auto; }
+        .mbg-memory-game .mbg-top { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 20px; }
+        .mbg-memory-game .mbg-title { min-width: 0; margin: 0; padding: 0; color: var(--ink); font: inherit; font-size: clamp(1.45rem, 4vw, 2.15rem); line-height: 1.15; font-weight: 800; overflow-wrap: anywhere; }
+        .mbg-memory-game .mbg-stats { display: flex; flex: 0 0 auto; gap: 8px; }
+        .mbg-memory-game .mbg-stat { min-width: 92px; padding: 9px 12px; border: 1px solid rgba(23,32,51,.08); border-radius: 12px; background: rgba(255,255,255,.86); box-shadow: 0 5px 18px rgba(22,39,56,.07); text-align: center; }
+        .mbg-memory-game .mbg-stat span { display: block; color: var(--muted); font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+        .mbg-memory-game .mbg-stat strong { color: var(--ink); font-size: 1.08rem; font-weight: 800; }
+        .mbg-memory-game .mbg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(142px, 42vw), 1fr)); gap: clamp(10px, 2vw, 16px); perspective: 1100px; }
+        .mbg-memory-game .mbg-card { position: relative; display: block; width: 100%; min-width: 0; aspect-ratio: 1; padding: 0; margin: 0; border: 0; border-radius: 15px; color: var(--ink); background: transparent; box-shadow: none; font: inherit; cursor: pointer; transform-style: preserve-3d; transition: transform .5s cubic-bezier(.2,.7,.2,1), opacity .35s; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent; }
+        .mbg-memory-game .mbg-card:hover { color: var(--ink); background: transparent; box-shadow: none; }
+        .mbg-memory-game .mbg-card:focus-visible { outline: 3px solid #0b7285; outline-offset: 3px; }
+        .mbg-memory-game .mbg-card.mbg-flip { transform: rotateY(180deg); }
+        .mbg-memory-game .mbg-card.mbg-matched { opacity: 0; visibility: hidden; pointer-events: none; }
+        .mbg-memory-game .mbg-face { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; padding: 9px; border-radius: 15px; backface-visibility: hidden; -webkit-backface-visibility: hidden; box-shadow: 0 8px 22px rgba(22,39,56,.13); }
+        .mbg-memory-game .mbg-back { background-color: var(--card-bg); background-repeat: repeat; }
+        .mbg-memory-game[data-texture="diagonal"] .mbg-back { background-image: linear-gradient(135deg, rgba(255,255,255,.13) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.13) 50%, rgba(255,255,255,.13) 75%, transparent 75%); background-size: 28px 28px; }
+        .mbg-memory-game[data-texture="dots"] .mbg-back { background-image: radial-gradient(circle, rgba(255,255,255,.28) 2px, transparent 2.5px); background-size: 22px 22px; }
+        .mbg-memory-game[data-texture="grid"] .mbg-back { background-image: linear-gradient(rgba(255,255,255,.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.15) 1px, transparent 1px); background-size: 24px 24px; }
+        .mbg-memory-game[data-texture="solid"] .mbg-back { background-image: none; }
+        .mbg-memory-game .mbg-back-mark { color: rgba(255,255,255,.92); font-size: clamp(2rem, 7vw, 3.6rem); font-weight: 800; line-height: 1; }
+        .mbg-memory-game .mbg-front { transform: rotateY(180deg); border: 2px solid var(--card-bg); background: #ffffff; font-size: clamp(.9rem, 2.8vw, 1.14rem); font-weight: 750; text-align: center; overflow-wrap: anywhere; }
+        .mbg-memory-game .mbg-front img { display: block; width: 100%; height: 100%; object-fit: contain; }
+        .mbg-memory-game .mbg-front.mbg-text-image { padding: 0; }
+        .mbg-memory-game .mbg-front.mbg-text-image img { height: 74%; object-fit: cover; }
+        .mbg-memory-game .mbg-front .mbg-caption { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 26%; padding: 6px; background: #f7fafb; }
+        .mbg-memory-game .mbg-audio-symbol { font-size: clamp(2.2rem, 8vw, 3.6rem); line-height: 1; }
+        .mbg-memory-game .mbg-sound-badge { position: absolute; right: 8px; bottom: 8px; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,.94); box-shadow: 0 3px 10px rgba(0,0,0,.2); font-size: 1rem; }
+        .mbg-memory-game .mbg-modal { position: fixed; inset: 0; z-index: 99999; display: none; place-items: center; padding: 20px; background: rgba(11,30,39,.72); backdrop-filter: blur(5px); }
+        .mbg-memory-game .mbg-modal.mbg-show { display: grid; }
+        .mbg-memory-game .mbg-dialog { width: min(100%, 420px); padding: 30px; border-radius: 20px; color: var(--ink); background: #ffffff; box-shadow: 0 24px 70px rgba(0,0,0,.25); text-align: center; }
+        .mbg-memory-game .mbg-dialog-icon { font-size: 3rem; line-height: 1; }
+        .mbg-memory-game .mbg-dialog h2 { margin: 12px 0 6px; padding: 0; color: var(--ink); font: inherit; font-size: 1.65rem; font-weight: 800; }
+        .mbg-memory-game .mbg-dialog p { margin: 0; color: var(--muted); }
+        .mbg-memory-game .mbg-again { min-height: 48px; margin: 22px 0 0; padding: 12px 22px; border: 0; border-radius: 11px; color: #ffffff; background: var(--card-bg); box-shadow: none; font: inherit; font-weight: 750; cursor: pointer; -webkit-appearance: none; appearance: none; }
+        .mbg-memory-game .mbg-again:hover { color: #ffffff; background: var(--card-bg); filter: brightness(.9); }
+        .mbg-memory-game .mbg-again:focus-visible { outline: 3px solid #0b7285; outline-offset: 3px; }
+        @media (max-width: 620px) {
+            .mbg-memory-game { min-height: 420px; padding: 12px; border-radius: 14px; }
+            .mbg-memory-game .mbg-top { align-items: flex-start; flex-direction: column; margin-bottom: 14px; }
+            .mbg-memory-game .mbg-stats { width: 100%; }
+            .mbg-memory-game .mbg-stat { flex: 1 1 0; min-width: 0; }
+            .mbg-memory-game .mbg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .mbg-memory-game .mbg-card { transition-duration: .01ms; }
+        }
+    </style>
+    <main class="mbg-game">
+        <header class="mbg-top">
+            <h2 class="mbg-title"></h2>
+            <div class="mbg-stats" aria-label="Результаты игры">
+                <div class="mbg-stat"><span>Очки</span><strong class="mbg-score">0</strong></div>
+                <div class="mbg-stat"><span>Найдено</span><strong><b class="mbg-found">0</b>/<b class="mbg-total">0</b></strong></div>
+            </div>
+        </header>
+        <section class="mbg-grid" aria-label="Игровые карточки"></section>
+    </main>
+    <div class="mbg-modal" role="dialog" aria-modal="true" aria-label="Игра завершена">
+        <div class="mbg-dialog">
+            <div class="mbg-dialog-icon" aria-hidden="true">🎉</div>
+            <h2>Отличная работа!</h2>
+            <p>Все пары найдены. Итог: <strong class="mbg-final-score">0</strong> очков.</p>
+            <button class="mbg-again" type="button">Играть снова</button>
+        </div>
+    </div>
+    <script type="application/json" id="mbw-project-data">{"title":"Найди пару!","colors":{"card":"#27721d","bg":"#cfe8dc"},"design":{"texture":"diagonal","mark":"none"},"pairs":[{"c1":{"type":"text","content":"教室"},"c2":{"type":"text","content":"Класс"}},{"c1":{"type":"text","content":"桌子"},"c2":{"type":"text","content":"Стол"}},{"c1":{"type":"text","content":"椅子"},"c2":{"type":"text","content":"Стул"}},{"c1":{"type":"text","content":"书"},"c2":{"type":"text","content":"Книга"}},{"c1":{"type":"text","content":"铅笔"},"c2":{"type":"text","content":"Карандаш"}},{"c1":{"type":"text","content":"彩色笔"},"c2":{"type":"text","content":"Фломастер/Цветной карандаш"}},{"c1":{"type":"text","content":"剪刀"},"c2":{"type":"text","content":"Ножницы"}},{"c1":{"type":"text","content":"橡皮"},"c2":{"type":"text","content":"Ластик"}},{"c1":{"type":"text","content":"梳子"},"c2":{"type":"text","content":"Расчёска"}},{"c1":{"type":"text","content":"衣服"},"c2":{"type":"text","content":"Одежда"}},{"c1":{"type":"text","content":"鞋子"},"c2":{"type":"text","content":"Обувь"}},{"c1":{"type":"text","content":"尺子"},"c2":{"type":"text","content":"Линейка"}},{"c1":{"type":"text","content":"这"},"c2":{"type":"text","content":"Это"}}]}</script>
+    <script>
+        (function () {
+            "use strict";
+            var currentScript = document.currentScript;
+            var root = currentScript && currentScript.closest(".mbg-memory-game");
+            if (!root || root.dataset.initialized === "true") return;
+            root.dataset.initialized = "true";
+            var q = function (selector) { return root.querySelector(selector); };
+            var project = JSON.parse(q("#mbw-project-data").textContent);
+            var design = project.design || { texture: "diagonal", mark: "question" };
+            var markText = design.mark === "star" ? "★" : design.mark === "none" ? "" : "?";
+            root.style.setProperty("--card-bg", project.colors && project.colors.card || "#155e75");
+            root.style.setProperty("--game-bg", project.colors && project.colors.bg || "#eef6f8");
+            root.dataset.texture = design.texture || "diagonal";
+            q(".mbg-title").textContent = project.title || "Найди пару!";
+
+            var sourceCards = [];
+            (project.pairs || []).forEach(function (pair, index) {
+                sourceCards.push({ pairId: index + 1, type: pair.c1.type, content: pair.c1.content });
+                sourceCards.push({ pairId: index + 1, type: pair.c2.type, content: pair.c2.content });
+            });
+            var cardsData = [];
+            var grid = q(".mbg-grid");
+            var scoreElement = q(".mbg-score");
+            var foundElement = q(".mbg-found");
+            var totalElement = q(".mbg-total");
+            var modal = q(".mbg-modal");
+            var firstCard = null;
+            var secondCard = null;
+            var boardLocked = false;
+            var score = 0;
+            var matchedPairs = 0;
+            var activeAudio = null;
+
+            function appendText(parent, text, className) {
+                var element = document.createElement("div");
+                if (className) element.className = className;
+                element.textContent = text || "";
+                parent.appendChild(element);
+            }
+
+            function appendImage(parent, source) {
+                var image = document.createElement("img");
+                image.src = source || "";
+                image.alt = "";
+                image.draggable = false;
+                parent.appendChild(image);
+            }
+
+            function appendSoundBadge(parent, large) {
+                var badge = document.createElement("span");
+                badge.className = large ? "mbg-audio-symbol" : "mbg-sound-badge";
+                badge.textContent = "🔊";
+                badge.setAttribute("aria-hidden", "true");
+                parent.appendChild(badge);
+            }
+
+            function createCard(data) {
+                var card = document.createElement("button");
+                card.type = "button";
+                card.className = "mbg-card";
+                card.dataset.pair = String(data.pairId);
+                card.dataset.type = data.type;
+                card.setAttribute("aria-label", "Закрытая карточка");
+
+                var front = document.createElement("span");
+                front.className = "mbg-face mbg-front";
+                var back = document.createElement("span");
+                back.className = "mbg-face mbg-back";
+                back.setAttribute("aria-hidden", "true");
+                if (markText) {
+                    var backMark = document.createElement("span");
+                    backMark.className = "mbg-back-mark";
+                    backMark.textContent = markText;
+                    back.appendChild(backMark);
+                }
+
+                if (data.type === "text") appendText(front, data.content);
+                else if (data.type === "image") appendImage(front, data.content);
+                else if (data.type === "audio") {
+                    card.dataset.audioSrc = data.content || "";
+                    appendSoundBadge(front, true);
+                } else if (data.type === "image-audio") {
+                    card.dataset.audioSrc = data.content.aud || "";
+                    appendImage(front, data.content.img);
+                    appendSoundBadge(front, false);
+                } else if (data.type === "text-image") {
+                    front.classList.add("mbg-text-image");
+                    appendImage(front, data.content.img);
+                    appendText(front, data.content.txt, "mbg-caption");
+                } else if (data.type === "text-audio") {
+                    card.dataset.audioSrc = data.content.aud || "";
+                    appendText(front, data.content.txt);
+                    appendSoundBadge(front, false);
+                }
+
+                card.append(front, back);
+                card.addEventListener("click", function () { flipCard(card); });
+                return card;
+            }
+
+            function playCardAudio(card) {
+                if (!card.dataset.audioSrc) return;
+                if (activeAudio) {
+                    activeAudio.pause();
+                    activeAudio.currentTime = 0;
+                }
+                activeAudio = new Audio(card.dataset.audioSrc);
+                activeAudio.play().catch(function () {});
+            }
+
+            function resetTurn() {
+                firstCard = null;
+                secondCard = null;
+                boardLocked = false;
+            }
+
+            function finishGame() {
+                q(".mbg-final-score").textContent = String(score);
+                modal.classList.add("mbg-show");
+                setTimeout(function () { q(".mbg-again").focus(); }, 50);
+            }
+
+            function checkPair() {
+                var matched = firstCard.dataset.pair === secondCard.dataset.pair;
+                if (matched) {
+                    score += 10;
+                    matchedPairs += 1;
+                    scoreElement.textContent = String(score);
+                    foundElement.textContent = String(matchedPairs);
+                    var matchedFirst = firstCard;
+                    var matchedSecond = secondCard;
+                    setTimeout(function () {
+                        matchedFirst.classList.add("mbg-matched");
+                        matchedSecond.classList.add("mbg-matched");
+                        matchedFirst.disabled = true;
+                        matchedSecond.disabled = true;
+                        resetTurn();
+                        if (matchedPairs === cardsData.length / 2) setTimeout(finishGame, 220);
+                    }, 620);
+                } else {
+                    score = Math.max(0, score - 2);
+                    scoreElement.textContent = String(score);
+                    var unmatchedFirst = firstCard;
+                    var unmatchedSecond = secondCard;
+                    setTimeout(function () {
+                        unmatchedFirst.classList.remove("mbg-flip");
+                        unmatchedSecond.classList.remove("mbg-flip");
+                        unmatchedFirst.setAttribute("aria-label", "Закрытая карточка");
+                        unmatchedSecond.setAttribute("aria-label", "Закрытая карточка");
+                        resetTurn();
+                    }, 900);
+                }
+            }
+
+            function flipCard(card) {
+                if (boardLocked || card === firstCard || card.disabled || card.classList.contains("mbg-matched")) return;
+                card.classList.add("mbg-flip");
+                card.setAttribute("aria-label", "Открытая карточка");
+                playCardAudio(card);
+                if (!firstCard) {
+                    firstCard = card;
+                    return;
+                }
+                secondCard = card;
+                boardLocked = true;
+                checkPair();
+            }
+
+            function startGame() {
+                if (activeAudio) {
+                    activeAudio.pause();
+                    activeAudio = null;
+                }
+                modal.classList.remove("mbg-show");
+                grid.replaceChildren();
+                score = 0;
+                matchedPairs = 0;
+                scoreElement.textContent = "0";
+                foundElement.textContent = "0";
+                resetTurn();
+                cardsData = sourceCards.slice();
+                for (var i = cardsData.length - 1; i > 0; i -= 1) {
+                    var randomIndex = Math.floor(Math.random() * (i + 1));
+                    var temporary = cardsData[i];
+                    cardsData[i] = cardsData[randomIndex];
+                    cardsData[randomIndex] = temporary;
+                }
+                totalElement.textContent = String(cardsData.length / 2);
+                cardsData.forEach(function (data) { grid.appendChild(createCard(data)); });
+            }
+
+            q(".mbg-again").addEventListener("click", startGame);
+            startGame();
+        })();
+    </script>
+</div>
